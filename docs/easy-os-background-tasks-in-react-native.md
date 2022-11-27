@@ -1,4 +1,3 @@
-
 # Easy OS Background Tasks in React Native
 
 <img src="/docs/easy-os-background-tasks-in-react-native.png" alt="Easy OS Background Tasks in React Native Header Image"/>
@@ -9,23 +8,23 @@ Today I’ll walk you through setting up tasks that will run periodically even w
 
 **We will use two libraries to accomplish this:**
 
-* [React Native Queue](https://github.com/billmalarky/react-native-queue): Control flow and job management.
+- [React Native Queue](https://github.com/billmalarky/rn-queue): Control flow and job management.
 
-* [React Native Background Task](https://github.com/jamesisaac/react-native-background-task): Register js handler function that will be executed when app is closed.
+- [React Native Background Task](https://github.com/jamesisaac/react-native-background-task): Register js handler function that will be executed when app is closed.
 
 **In our example, we will do basic image pre-fetching (yeah yeah it’s a bit pointless but it’s easy to understand for illustrative purposes).**
 
 **Examples of more realistic use cases for this functionality:**
 
-* Downloading content for offline access.
+- Downloading content for offline access.
 
-* Media processing.
+- Media processing.
 
-* Cache Warming.
+- Cache Warming.
 
-* *Durable* API calls to external services, such as publishing content to a variety of 3rd party distribution channel APIs.
+- _Durable_ API calls to external services, such as publishing content to a variety of 3rd party distribution channel APIs.
 
-* Complex and time-consuming jobs that you want consistently processed regardless if app is open, closed, or repeatedly opened and closed.
+- Complex and time-consuming jobs that you want consistently processed regardless if app is open, closed, or repeatedly opened and closed.
 
 ## Installation
 
@@ -33,9 +32,9 @@ First create the skeleton React Native app in your working directory
 
     $ react-native init backgroundexample
 
-Quickly install [react-native-queue](https://github.com/billmalarky/react-native-queue#installation) and [react-native-background-task](https://github.com/jamesisaac/react-native-background-task#installation) packages and link them (note react-native-background-fetch is an optional dependency of react-native-background-task required for iOS support).
+Quickly install [rn-queue](https://github.com/billmalarky/rn-queue#installation) and [react-native-background-task](https://github.com/jamesisaac/react-native-background-task#installation) packages and link them (note react-native-background-fetch is an optional dependency of react-native-background-task required for iOS support).
 
-    $ yarn add react-native-queue
+    $ yarn add rn-queue
     $ react-native link realm
     $ yarn add react-native-background-task
     $ react-native link react-native-background-task
@@ -71,18 +70,18 @@ Nothing fancy here. Just add ScrollView, Button, Image imports, modify the conta
       Button,
       Image
     } from 'react-native';
-    
+
     export default class App extends Component<{}> {
-    
+
       constructor(props) {
         super(props);
-    
+
         this.state = {
           showImages: false
         };
-    
+
       }
-    
+
       render() {
         return (
           <ScrollView style={styles.container}>
@@ -96,7 +95,7 @@ Nothing fancy here. Just add ScrollView, Button, Image imports, modify the conta
         );
       }
     }
-    
+
     const styles = StyleSheet.create({
       container: {
         padding: 10
@@ -121,30 +120,30 @@ What we want to happen in this background task function, is to initialize the qu
 In our example, 25 seconds will be more than enough to churn through the entire queue, seeing as we’re only gonna pre-fetch 3 images. However, imagine if we were pre-fetching 10,000 images. **The queue keeps the jobs durable** (they won’t be deleted until completed, and can auto-retry on failure), so every ~15 min when the OS fires this function in the background again, another batch of images would be pre-fetched, and sooner or later all of the images would be pre-fetched all behind the scenes.
 
     import BackgroundTask from 'react-native-background-task'
-    import queueFactory from 'react-native-queue';
-    
+    import queueFactory from 'rn-queue';
+
     BackgroundTask.define(async () => {
-    
+
       // Init queue
       queue = await queueFactory();
-    
+
       // Register job worker
       queue.addWorker('pre-fetch-image', async (id, payload) => {
-    
+
         Image.prefetch(payload.imageUrl);
-    
+
       });
-    
+
       // Start the queue with a lifespan
       // IMPORTANT: OS background tasks are limited to 30 seconds or less.
       // NOTE: Queue lifespan logic will attempt to stop queue processing 500ms less than passed lifespan for a healthy shutdown buffer.
       // IMPORTANT: Queue processing started with a lifespan will ONLY process jobs that have a defined timeout set.
       // Additionally, lifespan processing will only process next job if job.timeout < (remainingLifespan - 500).
       await queue.start(25000); // Run queue for at most 25 seconds.
-    
+
       // finish() must be called before OS hits timeout.
       BackgroundTask.finish();
-    
+
     });
 
 Then add a componentDidMount() lifecycle method to the App component to schedule the background task when the app mounts.
@@ -164,49 +163,49 @@ Your App.js file should now look something like this:
       Button,
       Image
     } from 'react-native';
-    
+
     import BackgroundTask from 'react-native-background-task'
-    import queueFactory from 'react-native-queue';
-    
+    import queueFactory from 'rn-queue';
+
     BackgroundTask.define(async () => {
-    
+
       // Init queue
       queue = await queueFactory();
-    
+
       // Register job worker
       queue.addWorker('pre-fetch-image', async (id, payload) => {
-    
+
         Image.prefetch(payload.imageUrl);
-    
+
       });
-    
+
       // Start the queue with a lifespan
       // IMPORTANT: OS background tasks are limited to 30 seconds or less.
       // NOTE: Queue lifespan logic will attempt to stop queue processing 500ms less than passed lifespan for a healthy shutdown buffer.
       // IMPORTANT: Queue processing started with a lifespan will ONLY process jobs that have a defined timeout set.
       // Additionally, lifespan processing will only process next job if job.timeout < (remainingLifespan - 500).
       await queue.start(25000); // Run queue for at most 25 seconds.
-    
+
       // finish() must be called before OS hits timeout.
       BackgroundTask.finish();
-    
+
     });
-    
+
     export default class App extends Component<{}> {
-    
+
       constructor(props) {
         super(props);
-    
+
         this.state = {
           showImages: false
         };
-    
+
       }
-    
+
       componentDidMount() {
         BackgroundTask.schedule(); // Schedule the task to run every ~15 min if app is closed.
       }
-    
+
       render() {
         return (
           <ScrollView style={styles.container}>
@@ -220,7 +219,7 @@ Your App.js file should now look something like this:
         );
       }
     }
-    
+
     const styles = StyleSheet.create({
       container: {
         padding: 10
@@ -257,57 +256,57 @@ Last but not least, update render() in line 92 to add the “Pre-fetch Images”
       Button,
       Image
     } from 'react-native';
-    
+
     import BackgroundTask from 'react-native-background-task'
-    import queueFactory from 'react-native-queue';
-    
+    import queueFactory from 'rn-queue';
+
     BackgroundTask.define(async () => {
-    
+
       // Init queue
       queue = await queueFactory();
-    
+
       // Register job worker
       queue.addWorker('pre-fetch-image', async (id, payload) => {
-    
+
         Image.prefetch(payload.imageUrl);
-    
+
       });
-    
+
       // Start the queue with a lifespan
       // IMPORTANT: OS background tasks are limited to 30 seconds or less.
       // NOTE: Queue lifespan logic will attempt to stop queue processing 500ms less than passed lifespan for a healthy shutdown buffer.
       // IMPORTANT: Queue processing started with a lifespan will ONLY process jobs that have a defined timeout set.
       // Additionally, lifespan processing will only process next job if job.timeout < (remainingLifespan - 500).
       await queue.start(25000); // Run queue for at most 25 seconds.
-    
+
       // finish() must be called before OS hits timeout.
       BackgroundTask.finish();
-    
+
     });
-    
+
     export default class App extends Component<{}> {
-    
+
       constructor(props) {
         super(props);
-    
+
         this.state = {
           queue: null,
           showImages: false
         };
-    
+
         queueFactory()
           .then(queue => {
             this.setState({queue});
           });
-    
+
       }
-    
+
       componentDidMount() {
         BackgroundTask.schedule(); // Schedule the task to run every ~15 min if app is closed.
       }
-    
+
       createPrefetchJobs() {
-    
+
         // Create the prefetch job for the first <Image> component.
         this.state.queue.createJob(
           'pre-fetch-image',
@@ -315,7 +314,7 @@ Last but not least, update render() in line 92 to add the “Pre-fetch Images”
           { attempts: 5, timeout: 15000 }, // Retry job on failure up to 5 times. Timeout job in 15 sec (prefetch is probably hanging if it takes that long).
           false // Must pass false as the last param so the queue starts up in the background task instead of immediately.
         );
-    
+
         // Create the prefetch job for the second <Image> component.
         this.state.queue.createJob(
           'pre-fetch-image',
@@ -323,7 +322,7 @@ Last but not least, update render() in line 92 to add the “Pre-fetch Images”
           { attempts: 5, timeout: 15000 }, // Retry job on failure up to 5 times. Timeout job in 15 sec (prefetch is probably hanging if it takes that long).
           false // Must pass false as the last param so the queue starts up in the background task instead of immediately.
         );
-    
+
         // Create the prefetch job for the third <Image> component.
         this.state.queue.createJob(
           'pre-fetch-image',
@@ -331,9 +330,9 @@ Last but not least, update render() in line 92 to add the “Pre-fetch Images”
           { attempts: 5, timeout: 15000 }, // Retry job on failure up to 5 times. Timeout job in 15 sec (prefetch is probably hanging if it takes that long).
           false // Must pass false as the last param so the queue starts up in the background task instead of immediately.
         );
-    
+
       }
-    
+
       render() {
         return (
           <ScrollView style={styles.container}>
@@ -348,7 +347,7 @@ Last but not least, update render() in line 92 to add the “Pre-fetch Images”
         );
       }
     }
-    
+
     const styles = StyleSheet.create({
       container: {
         padding: 10
